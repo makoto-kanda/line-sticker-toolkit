@@ -1,9 +1,0 @@
-﻿.gitignore
-sync.py
-__pycache__/
-.DS_Store
-Thumbs.db
-*_transparent.png
-output*/
-fonts/*.ttf
-fonts/*.otf
