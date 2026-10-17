@@ -4,7 +4,7 @@ from PIL import Image
 
 def select_target_directory():
     """final* に一致するディレクトリを検索し、番号で選択させる"""
-    print("=== LINE Stamp Directory Selector ===")
+    print("=== LINE Sticker Directory Selector ===")
     # カレントディレクトリから final* に一致するディレクトリを抽出
     candidates = [d for d in os.listdir('.') if os.path.isdir(d) and d.lower().startswith('final')]
     
@@ -40,18 +40,18 @@ def select_target_directory():
         except ValueError:
             print("❌ Invalid input. Please enter a valid number.")
 
-def validate_and_package_stamps():
+def validate_and_package_stickers():
     target_dir = select_target_directory()
     if not target_dir:
         return
 
-    print(f"\n=== LINE Stamp Validation Tool ===")
+    print(f"\n=== LINE Sticker Validation Tool ===")
     print(f"Checking directory: {target_dir}\n")
     
     files = os.listdir(target_dir)
     png_files = [f for f in files if f.lower().endswith('.png')]
     
-    stamp_files = []
+    sticker_files = []
     main_found = False
     tab_found = False
     other_files = []
@@ -62,32 +62,32 @@ def validate_and_package_stamps():
         elif f.lower() == "tab.png":
             tab_found = True
         elif f[:-4].isdigit():
-            stamp_files.append(f)
+            sticker_files.append(f)
         else:
             other_files.append(f)
             
-    stamp_files.sort(key=lambda x: int(x[:-4]))
+    sticker_files.sort(key=lambda x: int(x[:-4]))
     
     errors = 0
     warnings = 0
     
-    # 1. Check Stamp Count & Naming
-    count = len(stamp_files)
-    print(f"[1. Stamp Count Check]")
-    print(f"   Found {count} numbered stamp files (e.g., 01.png to {stamp_files[-1] if stamp_files else 'None'}).")
+    # 1. Check Sticker Count & Naming
+    count = len(sticker_files)
+    print(f"[1. Sticker Count Check]")
+    print(f"   Found {count} numbered sticker files (e.g., 01.png to {sticker_files[-1] if sticker_files else 'None'}).")
     allowed_counts = [8, 16, 24, 32, 40]
     if count in allowed_counts:
-        print(f"   ✅ Stamp count ({count}) is valid (allowed: {allowed_counts}).")
+        print(f"   ✅ Sticker count ({count}) is valid (allowed: {allowed_counts}).")
     else:
-        print(f"   ❌ Stamp count ({count}) is INVALID. LINE requires 8, 16, 24, 32, or 40 stickers.")
+        print(f"   ❌ Sticker count ({count}) is INVALID. LINE requires 8, 16, 24, 32, or 40 stickers.")
         errors += 1
         
     expected_names = [f"{i:02d}.png" for i in range(1, count + 1)]
-    actual_names = stamp_files
+    actual_names = sticker_files
     if actual_names == expected_names:
-        print(f"   ✅ Stamp file naming format is sequential (01.png, 02.png, ...).")
+        print(f"   ✅ Sticker file naming format is sequential (01.png, 02.png, ...).")
     else:
-        print(f"   ⚠️ Warning: Stamp filenames are not strictly sequential two-digit format (01.png, 02.png...).")
+        print(f"   ⚠️ Warning: Sticker filenames are not strictly sequential two-digit format (01.png, 02.png...).")
         warnings += 1
 
     print("\n[2. Required Extra Images Check]")
@@ -104,7 +104,7 @@ def validate_and_package_stamps():
         errors += 1
 
     if other_files:
-        print(f"   ⚠️ Notice: Found other non-stamp PNG files (will be excluded from ZIP): {other_files}")
+        print(f"   ⚠️ Notice: Found other non-sticker PNG files (will be excluded from ZIP): {other_files}")
 
     print("\n[3. Detailed Image Specifications Check]")
     
@@ -150,8 +150,8 @@ def validate_and_package_stamps():
     if tab_found:
         check_image(os.path.join(target_dir, "tab.png"), 96, 74, "tab.png", exact_size=True)
 
-    print(f"   Checking {len(stamp_files)} stamp images...")
-    for sf in stamp_files:
+    print(f"   Checking {len(sticker_files)} sticker images...")
+    for sf in sticker_files:
         path = os.path.join(target_dir, sf)
         check_image(path, 370, 320, sf, exact_size=False)
 
@@ -165,8 +165,8 @@ def validate_and_package_stamps():
         
         try:
             with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                # Add valid numbered stamps
-                for sf in stamp_files:
+                # Add valid numbered stickers
+                for sf in sticker_files:
                     file_path = os.path.join(target_dir, sf)
                     zipf.write(file_path, arcname=sf)
                 # Add main.png and tab.png
@@ -176,7 +176,7 @@ def validate_and_package_stamps():
                     zipf.write(os.path.join(target_dir, "tab.png"), arcname="tab.png")
             
             print(f"   ✅ Successfully generated: {zip_filename}")
-            print("   (Only required stamp files, main.png, and tab.png were packed, excluding any extra files.)")
+            print("   (Only required sticker files, main.png, and tab.png were packed, excluding any extra files.)")
         except Exception as e:
             print(f"   ❌ Failed to create ZIP file: {e}")
             
@@ -185,4 +185,4 @@ def validate_and_package_stamps():
         print("   ZIP packaging was skipped. Please fix the errors before generating the upload package.")
 
 if __name__ == "__main__":
-    validate_and_package_stamps()
+    validate_and_package_stickers()

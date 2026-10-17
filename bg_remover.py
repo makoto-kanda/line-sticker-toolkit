@@ -7,7 +7,7 @@ import numpy as np
 # Adjustment Parameters
 # ==========================================
 # Tolerance value for floodFill (handles anti-aliased edges)
-DIFF_VAL = 15
+DIFF_VAL = 3
 # ==========================================
 
 def list_png_files():
