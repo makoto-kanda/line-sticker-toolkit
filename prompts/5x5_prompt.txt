@@ -1,4 +1,4 @@
-A landscape 16:9 sticker sheet containing a grid of individual, unique character stickers based on the provided character reference image.
+A square 1:1 sticker sheet containing a grid of individual, unique character stickers based on the provided character reference image.
 
 [CHARACTER CONSISTENCY & STYLE]
 - Faithful recreation: Strictly maintain the base character appearance, art style, colors, and design features from the reference image.
@@ -7,7 +7,7 @@ A landscape 16:9 sticker sheet containing a grid of individual, unique character
 - Exaggeration: Slightly enhance the expressions and body gestures to make emotional reactions distinct and emphasized.
 
 [LAYOUT & FORMATTING FOR SCRIPT PROCESSING]
-- Grid layout: Arrange cleanly in an 8x5 grid layout (40 individual stickers total).
+- Grid layout: Arrange cleanly in an 5x5 grid layout (24 individual stickers total).
 - Background: Solid pitch-black background (#000000) with ZERO gradients, shadows, drop-shadows, or transparency grid textures.
 - Spacing: Provide ample, clear black spacing/gaps between every single sticker for automated cropping.
 - Sticker outline: Every individual sticker must have a distinct, solid, thick white die-cut outline (white stroke) surrounding the character.
@@ -16,46 +16,8 @@ A landscape 16:9 sticker sheet containing a grid of individual, unique character
 [STICKER VARIATIONS MATCHING TEXT LIST]
 - Create unique poses, facial expressions, and props for each sticker that perfectly match the tone, emotion, and scenario of the corresponding phrase from the provided list below.
 - List of phrases:
-1. おはよう！
-2. おやすみ！
-3. ありがとう！
-4. どういたしまして！
-5. 了解！
-6. お疲れさま！
-7. 元気？
-8. 元気！
-9. 久しぶり！
-10. またね！
-11. いいね！
-12. さすが！
-13. すげー！
-14. まじ？
-15. 懐かしい！
-16. もちろん！
-17. 任せて！
-18. 完璧！
-19. ノープロブレム！
-20. お願いします！
-21. ちょっと待ってて！
-22. 今戻った！
-23. 運転中…
-24. 乾杯！
-25. 美味そう！
-26. 美味い！
-27. 飲み過ぎた…
-28. もう食えない！
-29. 寿司が食いたい！
-30. 疲れた…
-31. 眠い…
-32. 微妙…
-33. ごめん！
-34. えっ…
-35. ？！
-36. 怒怒怒
-37. しくしく
-38. 頑張れ！
-39. 無理ゲーだろw
-40. www
+_LIST_24_PHRASES_HERE_
+Blank (no text. Just a miling face for main imange)
 
 [TEXT OVERLAY - ON]
 - Incorporate the exact corresponding text phrase from the list directly onto each sticker in bold, highly legible typography.

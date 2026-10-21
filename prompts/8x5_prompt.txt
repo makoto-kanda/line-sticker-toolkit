@@ -1,0 +1,23 @@
+A landscape 16:9 sticker sheet containing a grid of individual, unique character stickers based on the provided character reference image.
+
+[CHARACTER CONSISTENCY & STYLE]
+- Faithful recreation: Strictly maintain the base character appearance, art style, colors, and design features from the reference image.
+- Style conversion rule: If the reference image is a photograph, automatically convert the subject into a clean, professional illustration style while retaining all character features, colors, and identity. If the reference image is already an illustration, maintain its existing art style and colors.
+- Form: Adjust the character body to a compact, 2-to-3 heads tall (chibi/SD) proportion optimized for messaging stickers.
+- Exaggeration: Slightly enhance the expressions and body gestures to make emotional reactions distinct and emphasized.
+
+[LAYOUT & FORMATTING FOR SCRIPT PROCESSING]
+- Grid layout: Arrange cleanly in an 8x5 grid layout (40 individual stickers total).
+- Background: Solid pitch-black background (#000000) with ZERO gradients, shadows, drop-shadows, or transparency grid textures.
+- Spacing: Provide ample, clear black spacing/gaps between every single sticker for automated cropping.
+- Sticker outline: Every individual sticker must have a distinct, solid, thick white die-cut outline (white stroke) surrounding the character.
+- NO grid lines: Do NOT add grid lines, box frames, or dividing borders between stickers. The separation must consist strictly of pure black background space.
+
+[STICKER VARIATIONS MATCHING TEXT LIST]
+- Create unique poses, facial expressions, and props for each sticker that perfectly match the tone, emotion, and scenario of the corresponding phrase from the provided list below.
+- List of phrases:
+_LIST_ALL_PHRASES_HERE_
+
+[TEXT OVERLAY - ON]
+- Incorporate the exact corresponding text phrase from the list directly onto each sticker in bold, highly legible typography.
+- Position the text cleanly near the character (top or bottom). Ensure high contrast against the character and the black background.
