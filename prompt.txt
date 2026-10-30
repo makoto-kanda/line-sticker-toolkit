@@ -1,0 +1,49 @@
+A square 1:1 aspect ratio sticker sheet containing a 5x5 grid of individual, unique character stickers based on the provided character reference image.
+
+[CHARACTER CONSISTENCY & STYLE]
+
+- Faithful recreation: Strictly maintain the base character appearance, art style, colors, and design features from the reference image.
+- Style conversion rule: If the reference image is a photograph, automatically convert the subject into a clean, professional illustration style while retaining all character features, colors, and identity. If the reference image is already an illustration, maintain its existing art style and colors.
+- Form: Adjust the character body to a compact, 2-to-3 heads tall (chibi/SD) proportion optimized for messaging stickers.
+- Exaggeration: Slightly enhance the expressions and body gestures to make emotional reactions distinct and emphasized.
+
+[LAYOUT & FORMATTING FOR SCRIPT PROCESSING]
+
+- Grid layout: Arrange cleanly in a 5x5 grid layout (25 individual stickers total) filling a square 1:1 frame.
+- Background: Solid pitch-black background (#000000) with ZERO gradients, shadows, drop-shadows, or transparency grid textures.
+- Spacing: Provide ample, clear black spacing/gaps between every single sticker for automated cropping.
+- Sticker outline: Every individual sticker must have a distinct, solid, thick white die-cut outline (white stroke) surrounding the character.
+- NO grid lines: Do NOT add grid lines, box frames, or dividing borders between stickers. The separation must consist strictly of pure black background space.
+
+[STICKER VARIATIONS & SPECIAL INSTRUCTIONS]
+
+- Stickers 1 to 24: Create unique poses, facial expressions, and props for each sticker that perfectly match the tone, emotion, and scenario of the corresponding phrase from the list below.
+- Sticker 25 (The last one in the 5x5 grid, bottom-right): A prominent, high-quality main image/illustration of the character (character portrait or full-body pose) designed to serve as the LINE store main image.
+
+[LIST OF PHRASES AND STORYBOARD INSTRUCTIONS]
+
+1. んちゃ！: Energetic greeting, raised hand, bright smile, cheerful pop pose
+2. やっほー！: Waving hands enthusiastically with a warm friendly smile
+3. お疲れ様です！: Holding a steaming tea cup or drink, bowing head politely in appreciation
+4. お世話になります: Formal, polite deep bow with hands neatly placed
+5. お久しぶり～！: Running forward with open arms, overjoyed to see someone again
+6. 生きてる？: Peeking curiously while tapping on a smartphone, checking in gently
+7. どうもありがとうございます: Hand on chest, deeply touching expression of sincere gratitude
+8. ありがとう！: Big beaming smile, holding out a large heart or bouquet of flowers
+9. またね！: Turning back to wave goodbye with a friendly smile while walking away
+10. 後ほど～！: Pointing to a wristwatch or holding phone to ear, winking "see you later"
+11. どういたしまして！: Proud posture, chest puffed out, confident thumbs-up sign
+12. いえいえ！: Waving both hands in front of face humbly, modesty expression
+13. なぬ？: Head tilted in confusion, hand behind ear, humorous "what did you say?" face
+14. よろしくお願いします: Palms pressed together in prayer/plea posture, bowing respectfully
+15. よろしく～！: Winking cheerfully with a casual thumbs-up or finger gun pose
+16. えー！！: Shocked face, jaw dropped wide open, eyes wide in complete astonishment
+17. えー？: Eyes wide, frozen in surprise, slight head tilt with confused eyes
+18. ただいまー！: Bursting through a door, arms open wide with an excited home-coming expression
+19. おかえりー！: Sitting comfortably, waving happily to welcome someone home
+20. ど～も～！: Energetic stage entrance pose, light casual wave with a joyful smile
+21. あざっす！: Athletic casual bow, touching cap/head lightly with a relaxed smile
+22. おやすみ～: Snuggled in a cozy blanket sleeping peacefully, sleeping Zzz bubbles
+23. いいね～！: Enthusiastic double thumbs-up pose, bright approving smile
+24. おーいいじゃん！: Leaning forward with open hand, friendly tsukkomi (playful pushback) gesture
+25. (Main image - text-free character artwork)

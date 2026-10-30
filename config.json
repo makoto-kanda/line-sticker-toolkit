@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "font_path": "../fonts/Mochiy_Pop_One/MochiyPopOne-Regular.ttf",
+  "bold_font_path": null,
+
+  "text_color": "#000000",
+  "font_weight": 700,
+  "outline_color": "#FFFFFF",
+  "outline_width": 5,
+
+  "text_position": "bottom",
+  "text_alignment": "center",
+
+  "text_width_ratio": 4.0,
+  "max_text_height_ratio": 0.30,
+
+  "text_gap": 8,
+  "max_lines": 2,
+  "auto_shrink": true,
+  "auto_font_min_size": 15,
+
+  "stickers": [
+    {
+      "number": 1,
+      "text": "んちゃ！",
+      "color": "#D94841"
+    },
+    {
+      "number": 2,
+      "text": "やっほー！",
+      "color": "#5356A6"
+    },
+    {
+      "number": 3,
+      "text": "お疲れ様です！",
+      "color": "#C03970"
+    },
+    {
+      "number": 4,
+      "text": "お世話になります",
+      "color": "#247A63"
+    },
+    {
+      "number": 5,
+      "text": "お久しぶり〜！",
+      "color": "#2367A8"
+    },
+    {
+      "number": 6,
+      "text": "生きてる？",
+      "color": "#276749"
+    },
+    {
+      "number": 7,
+      "text": "どうもありがとうございます",
+      "color": "#087E8B"
+    },
+    {
+      "number": 8,
+      "text": "ありがとう！",
+      "color": "#6254A4"
+    },
+    {
+      "number": 9,
+      "text": "またね！",
+      "color": "#A34D68"
+    },
+    {
+      "number": 10,
+      "text": "後ほど〜！",
+      "color": "#B54747"
+    },
+    {
+      "number": 11,
+      "text": "どういたしまして！",
+      "color": "#B05A20"
+    },
+    {
+      "number": 12,
+      "text": "いえいえ！",
+      "color": "#286C91"
+    },
+    {
+      "number": 13,
+      "text": "なぬ？",
+      "color": "#5A6B32"
+    },
+    {
+      "number": 14,
+      "text": "よろしくお願いします",
+      "color": "#A04478"
+    },
+    {
+      "number": 15,
+      "text": "よろしく〜！",
+      "color": "#986515"
+    },
+    {
+      "number": 16,
+      "text": "えー！！",
+      "color": "#C44732"
+    },
+    {
+      "number": 17,
+      "text": "えー？",
+      "color": "#2B7A59"
+    },
+    {
+      "number": 18,
+      "text": "ただいまー！",
+      "color": "#3169B0"
+    },
+    {
+      "number": 19,
+      "text": "おかえりー！",
+      "color": "#C33D35"
+    },
+    {
+      "number": 20,
+      "text": "ど〜も〜！",
+      "color": "#7252A0"
+    },
+    {
+      "number": 21,
+      "text": "あざっす！",
+      "color": "#287A52"
+    },
+    {
+      "number": 22,
+      "text": "おやすみ〜",
+      "color": "#B34B19"
+    },
+    {
+      "number": 23,
+      "text": "いいね〜！",
+      "color": "#2468A8"
+    },
+    {
+      "number": 24,
+      "text": "おーいいじゃん！",
+      "color": "#A04472"
+    },
+    {
+      "number": 25,
+      "text": " ",
+      "color": "#A04472"
+    }
+  ]
+}
