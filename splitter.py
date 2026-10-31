@@ -33,11 +33,8 @@ MAX_W, MAX_H = 370, 320
 MARGIN = 10
 
 # Font auto-fit settings
-AUTO_FONT_MIN_SIZE = 12
-AUTO_FONT_MAX_SIZE = 120
-
-# Text dimensions are measured in final 370x320 output pixels.
-# ==========================================
+AUTO_FONT_MIN_SIZE = 1
+AUTO_FONT_MAX_SIZE = 36
 
 
 # ==========================================
@@ -148,21 +145,84 @@ os.makedirs(OUT_DIR, exist_ok=True)
 # ==========================================
 if config is not None:
 
-
-
-    # Override grid dimensions from JSON when specified.
+    # ------------------------------------------------------
+    # Common processing parameters (JSON overrides)
+    # ------------------------------------------------------
     GRID_COLS = int(config.get("grid_cols", GRID_COLS))
     GRID_ROWS = int(config.get("grid_rows", GRID_ROWS))
 
+    CUT_TOP = int(config.get("cut_top", CUT_TOP))
+    CUT_BOTTOM = int(config.get("cut_bottom", CUT_BOTTOM))
+    CUT_LEFT = int(config.get("cut_left", CUT_LEFT))
+    CUT_RIGHT = int(config.get("cut_right", CUT_RIGHT))
+
+    PAD_TOP_RATIO = float(config.get("pad_top_ratio", PAD_TOP_RATIO))
+    PAD_BOTTOM_RATIO = float(config.get("pad_bottom_ratio", PAD_BOTTOM_RATIO))
+    PAD_LEFT_RATIO = float(config.get("pad_left_ratio", PAD_LEFT_RATIO))
+    PAD_RIGHT_RATIO = float(config.get("pad_right_ratio", PAD_RIGHT_RATIO))
+
+    kernel_value = config.get("morph_kernel_size", MORPH_KERNEL_SIZE)
+    if not isinstance(kernel_value, (list, tuple)) or len(kernel_value) != 2:
+        raise ValueError(
+            '"morph_kernel_size" must be a two-item array, e.g. [7, 7].'
+        )
+    MORPH_KERNEL_SIZE = tuple(int(v) for v in kernel_value)
+
+    DEBRIS_MAX_AREA = int(config.get("debris_max_area", DEBRIS_MAX_AREA))
+    EDGE_THRESHOLD = int(config.get("edge_threshold", EDGE_THRESHOLD))
+
+    MAX_W = int(config.get("max_w", MAX_W))
+    MAX_H = int(config.get("max_h", MAX_H))
+    MARGIN = int(config.get("margin", MARGIN))
+
+    AUTO_FONT_MIN_SIZE = int(
+        config.get("auto_font_min_size", AUTO_FONT_MIN_SIZE)
+    )
+    AUTO_FONT_MAX_SIZE = int(
+        config.get("auto_font_max_size", AUTO_FONT_MAX_SIZE)
+    )
+
+    # ------------------------------------------------------
+    # Validate common parameters
+    # ------------------------------------------------------
     if GRID_COLS < 1 or GRID_ROWS < 1:
         raise ValueError(
             '"grid_cols" and "grid_rows" must be positive integers.'
         )
 
+    if min(CUT_TOP, CUT_BOTTOM, CUT_LEFT, CUT_RIGHT) < 0:
+        raise ValueError("CUT values must be zero or positive.")
 
+    if min(
+        PAD_TOP_RATIO,
+        PAD_BOTTOM_RATIO,
+        PAD_LEFT_RATIO,
+        PAD_RIGHT_RATIO
+    ) < 0:
+        raise ValueError("PAD ratios must be zero or positive.")
 
+    if (
+        min(MORPH_KERNEL_SIZE) < 1
+        or any(v % 2 == 0 for v in MORPH_KERNEL_SIZE)
+    ):
+        raise ValueError(
+            '"morph_kernel_size" values must be positive odd integers.'
+        )
 
+    if DEBRIS_MAX_AREA < 0 or EDGE_THRESHOLD < 0:
+        raise ValueError(
+            '"debris_max_area" and "edge_threshold" must be zero or positive.'
+        )
 
+    if MAX_W < 2 or MAX_H < 2:
+        raise ValueError('"max_w" and "max_h" must be at least 2.')
+
+    if MARGIN < 0 or (2 * MARGIN >= MAX_W) or (2 * MARGIN >= MAX_H):
+        raise ValueError('"margin" is too large for max_w/max_h.')
+
+    # ------------------------------------------------------
+    # Required configuration keys
+    # ------------------------------------------------------
     required_keys = ["font_path", "stickers"]
     missing_keys = [
         key for key in required_keys if key not in config
@@ -181,7 +241,10 @@ if config is not None:
     if not os.path.isfile(font_path):
         raise FileNotFoundError(f"Font file not found: {font_path}")
 
-    font_size_default = 48
+    # ------------------------------------------------------
+    # Text defaults
+    # ------------------------------------------------------
+    font_size_default = int(config.get("font_size", 48))
     text_color_default = config.get("text_color", "#000000")
     outline_color_default = config.get("outline_color", "#FFFFFF")
     outline_width_default = int(config.get("outline_width", 12))
@@ -189,10 +252,13 @@ if config is not None:
     text_alignment_default = config.get("text_alignment", "center")
     max_lines_default = int(config.get("max_lines", 2))
     text_width_ratio_default = float(config.get("text_width_ratio", 4.0))
-    max_text_height_ratio_default = float(config.get("max_text_height_ratio", 1.0))
+    max_text_height_ratio_default = float(
+        config.get("max_text_height_ratio", 1.0)
+    )
     auto_shrink_default = bool(config.get("auto_shrink", True))
-    auto_font_min_size = int(config.get("auto_font_min_size", AUTO_FONT_MIN_SIZE))
-    auto_font_max_size = int(config.get("auto_font_max_size", AUTO_FONT_MAX_SIZE))
+
+    auto_font_min_size = AUTO_FONT_MIN_SIZE
+    auto_font_max_size = AUTO_FONT_MAX_SIZE
 
     # Inline rich-text defaults. Per-sticker values override these.
     inline_scale_defaults = {
@@ -201,19 +267,24 @@ if config is not None:
         "sub_scale": float(config.get("sub_scale", 0.7)),
         "sup_scale": float(config.get("sup_scale", 0.7)),
     }
+
     for key, value in inline_scale_defaults.items():
         if value <= 0:
             raise ValueError(f'"{key}" must be greater than 0.')
 
     if text_width_ratio_default <= 0:
         raise ValueError('"text_width_ratio" must be greater than 0.')
+
     if max_text_height_ratio_default <= 0:
         raise ValueError('"max_text_height_ratio" must be greater than 0.')
+
     if auto_font_min_size < 1 or auto_font_max_size < auto_font_min_size:
         raise ValueError('Invalid auto font size range.')
 
-    # overlap_ratio supports both the legacy numeric format and the
-    # line-count-specific dictionary format.
+    # ------------------------------------------------------
+    # overlap_ratio supports both the legacy numeric format
+    # and the line-count-specific dictionary format.
+    # ------------------------------------------------------
     DEFAULT_OVERLAP_RATIOS = {
         1: 0.50,
         2: 0.65,
@@ -254,6 +325,7 @@ if config is not None:
         raise ValueError(
             '"overlap_ratio" must be a number or an object keyed by line count.'
         )
+
     # Compatibility warnings for deprecated configuration keys.
     if "text_gap" in config:
         print(
@@ -270,6 +342,7 @@ if config is not None:
                 f'WARNING: Sticker {number}: "color" is deprecated. '
                 'Use "text_color" instead.'
             )
+
         if "text_gap" in item:
             print(
                 f'WARNING: Sticker {number}: "text_gap" is deprecated and will be ignored.'
@@ -375,18 +448,27 @@ class InlineMarkupParser(HTMLParser):
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
-        self.stack = [{"tag": None, "scale": 1.0, "bold": False,
-                       "strike": False, "underline": False,
-                       "italic": False, "shift": 0}]
+        self.stack = [{
+            "tag": None,
+            "scale": 1.0,
+            "bold": False,
+            "strike": False,
+            "underline": False,
+            "italic": False,
+            "shift": 0
+        }]
         self.runs = []
 
     def handle_starttag(self, tag, attrs):
         if tag not in self.ALLOWED_TAGS:
             raise ValueError(f"Unsupported inline tag <{tag}>.")
+
         if attrs:
             raise ValueError(f"Attributes are not supported in <{tag}>.")
+
         parent = self.stack[-1].copy()
         parent["tag"] = tag
+
         if tag == "small":
             parent["scale_tag"] = "small"
         elif tag == "big":
@@ -403,18 +485,24 @@ class InlineMarkupParser(HTMLParser):
             parent["strike"] = True
         elif tag == "u":
             parent["underline"] = True
+
         self.stack.append(parent)
 
     def handle_endtag(self, tag):
         if len(self.stack) == 1 or self.stack[-1]["tag"] != tag:
-            raise ValueError(f"Unexpected or mismatched closing tag </{tag}>.")
+            raise ValueError(
+                f"Unexpected or mismatched closing tag </{tag}>."
+            )
+
         self.stack.pop()
 
     def handle_data(self, data):
         if not data:
             return
+
         style = self.stack[-1].copy()
         style.pop("tag", None)
+
         if self.runs and self.runs[-1]["style"] == style:
             self.runs[-1]["text"] += data
         else:
@@ -422,6 +510,7 @@ class InlineMarkupParser(HTMLParser):
 
     def close(self):
         super().close()
+
         if len(self.stack) != 1:
             tag = self.stack[-1]["tag"]
             raise ValueError(f"Unclosed inline tag <{tag}>.")
@@ -429,6 +518,7 @@ class InlineMarkupParser(HTMLParser):
 
 def parse_inline_text(text, scales, sticker_number):
     parser = InlineMarkupParser()
+
     try:
         parser.feed(text)
         parser.close()
@@ -437,154 +527,440 @@ def parse_inline_text(text, scales, sticker_number):
 
     # Split runs on explicit newlines while retaining each run's formatting.
     lines = [[]]
+
     for run in parser.runs:
         pieces = run["text"].split("\n")
+
         for index, piece in enumerate(pieces):
             if piece:
                 style = run["style"].copy()
                 scale_tag = style.pop("scale_tag", None)
+
                 if scale_tag in scales:
                     style["scale"] = scales[scale_tag]
                 else:
                     style["scale"] = 1.0
-                lines[-1].append({"text": piece, "style": style})
+
+                lines[-1].append({
+                    "text": piece,
+                    "style": style
+                })
+
             if index < len(pieces) - 1:
                 lines.append([])
+
     return lines
 
 
 def run_font_size(base_size, run):
-    return max(1, int(round(base_size * run["style"].get("scale", 1.0))))
+    return max(
+        1,
+        int(round(base_size * run["style"].get("scale", 1.0)))
+    )
 
 
 def measure_rich_lines(draw, lines, base_size, weight, outline_width):
-    """Measure mixed-size runs on a shared font baseline for every line."""
+    """Measure mixed-size runs using their actual glyph bounds and shared baseline."""
     measured = []
+
     for line in lines:
         run_data = []
-        max_ascent = 0
-        max_descent = 0
+
         if not line:
             blank_font = load_font(base_size, weight)
             blank_ascent, blank_descent = blank_font.getmetrics()
+
             measured.append({
-                "runs": [], "width": 0,
-                "height": max(1, blank_ascent + blank_descent + 2 * outline_width),
+                "runs": [],
+                "width": 0,
+                "height": max(
+                    1,
+                    blank_ascent + blank_descent + 2 * outline_width
+                ),
                 "ascent": blank_ascent + outline_width,
-                "descent": blank_descent + outline_width,
+                "descent": blank_descent + outline_width
             })
             continue
+
+        # Measure the actual glyph bounds relative to the shared baseline.
+        # This includes the outline and also accounts for sub/superscript shifts.
+        min_top = 0
+        max_bottom = 0
+
         for run in line:
             font = load_font(run_font_size(base_size, run), weight)
-            ascent, descent = font.getmetrics()
             shift = run["style"].get("shift", 0)
+
             # Sub/sup offsets are proportional to the run's own font size.
             baseline_shift = int(round(font.size * 0.22 * shift))
-            max_ascent = max(max_ascent, ascent - baseline_shift)
-            max_descent = max(max_descent, descent + baseline_shift)
+
+            bbox = draw.textbbox(
+                (0, 0),
+                run["text"],
+                font=font,
+                anchor="ls",
+                stroke_width=outline_width
+            )
+
+            run_top = bbox[1] + baseline_shift
+            run_bottom = bbox[3] + baseline_shift
+
+            min_top = min(min_top, run_top)
+            max_bottom = max(max_bottom, run_bottom)
+
             width = float(draw.textlength(run["text"], font=font))
             width += 2 * outline_width
+
             run_data.append((run, font, width, baseline_shift))
+
+        line_ascent = -min_top
+        line_descent = max_bottom
+
         measured.append({
             "runs": run_data,
             "width": sum(entry[2] for entry in run_data),
-            "height": max(1, max_ascent + max_descent),
-            "ascent": max_ascent,
-            "descent": max_descent,
+            "height": max(1, line_ascent + line_descent),
+            "ascent": line_ascent,
+            "descent": line_descent
         })
-    widest = max((line["width"] for line in measured), default=0)
+
+    widest = max(
+        (line["width"] for line in measured),
+        default=0
+    )
     total_height = sum(line["height"] for line in measured)
+
     return measured, widest, total_height
+
+def wrap_rich_lines(draw, lines, base_size, weight, outline_width,
+                    max_allowed_width):
+    """
+    Automatically wrap rich-text lines to fit the allowed width.
+
+    Japanese text is wrapped character by character.
+    Whitespace is preferred as a break point for languages such as English.
+    Inline formatting is preserved.
+    """
+    wrapped_lines = []
+
+    def append_atom(target, atom):
+        if target and target[-1]["style"] == atom["style"]:
+            target[-1]["text"] += atom["text"]
+        else:
+            target.append({
+                "text": atom["text"],
+                "style": atom["style"].copy()
+            })
+
+    def atom_width(atom):
+        font = load_font(
+            run_font_size(base_size, atom),
+            weight
+        )
+        return (
+            float(draw.textlength(atom["text"], font=font))
+            + 2 * outline_width
+        )
+
+    for original_line in lines:
+        # Preserve explicitly empty lines.
+        if not original_line:
+            wrapped_lines.append([])
+            continue
+
+        atoms = []
+
+        for run in original_line:
+            for char in run["text"]:
+                atoms.append({
+                    "text": char,
+                    "style": run["style"].copy()
+                })
+
+        current = []
+
+        for atom in atoms:
+            candidate = current + [atom]
+
+            candidate_runs = []
+            for entry in candidate:
+                append_atom(candidate_runs, entry)
+
+            _, candidate_width, _ = measure_rich_lines(
+                draw,
+                [candidate_runs],
+                base_size,
+                weight,
+                outline_width
+            )
+
+            if candidate_width <= max_allowed_width or not current:
+                current.append(atom)
+                continue
+
+            # Prefer breaking at the last whitespace in the current line.
+            whitespace_index = None
+
+            for i in range(len(current) - 1, -1, -1):
+                if current[i]["text"].isspace():
+                    whitespace_index = i
+                    break
+
+            if whitespace_index is not None:
+                left = current[:whitespace_index]
+                right = current[whitespace_index + 1:]
+
+                if left:
+                    line_runs = []
+                    for entry in left:
+                        append_atom(line_runs, entry)
+                    wrapped_lines.append(line_runs)
+
+                current = right
+                current.append(atom)
+
+            else:
+                # No suitable whitespace: break before the new character.
+                line_runs = []
+                for entry in current:
+                    append_atom(line_runs, entry)
+
+                wrapped_lines.append(line_runs)
+                current = [atom]
+
+        if current:
+            # Remove trailing whitespace at the end of the visual line.
+            while current and current[-1]["text"].isspace():
+                current.pop()
+
+            if current:
+                line_runs = []
+                for entry in current:
+                    append_atom(line_runs, entry)
+                wrapped_lines.append(line_runs)
+            else:
+                wrapped_lines.append([])
+
+    return wrapped_lines
+
 def prepare_text_auto_fit(item, draw, max_allowed_width, max_allowed_height):
-    """Fit explicit lines of rich text without inserting automatic breaks."""
+    """
+    Fit rich text into the allowed area.
+
+    Priority:
+    1. Preserve explicit newlines and shrink the font if necessary.
+    2. Without explicit newlines, try a single line first.
+    3. If a single line cannot fit, automatically wrap the text.
+    4. Respect max_lines and the available width/height.
+    """
     raw_text = str(item.get("text", "")).strip()
+
     if not raw_text:
         return None, []
 
+    sticker_number = item.get("number", "?")
+
     color = item.get("text_color", item.get("color", text_color_default))
     outline_color = item.get("outline_color", outline_color_default)
-    outline_width = max(0, int(item.get("outline_width", outline_width_default)))
+    outline_width = max(
+        0,
+        int(item.get("outline_width", outline_width_default))
+    )
     weight = item.get("font_weight", config.get("font_weight"))
     max_lines = max(1, int(item.get("max_lines", max_lines_default)))
     position = item.get("position", text_position_default)
     alignment = item.get("alignment", text_alignment_default)
 
     scales = inline_scale_defaults.copy()
+
     for key in scales:
         if key in item:
             scales[key] = float(item[key])
-            if scales[key] <= 0:
-                raise ValueError(f"Sticker {item.get('number', '?')}: {key} must be greater than 0.")
 
-    # Tag names map to configurable JSON scale keys.
+            if scales[key] <= 0:
+                raise ValueError(
+                    f"Sticker {sticker_number}: "
+                    f"{key} must be greater than 0."
+                )
+
     tag_scales = {
-        "small": scales["small_scale"], "big": scales["big_scale"],
-        "sub": scales["sub_scale"], "sup": scales["sup_scale"],
+        "small": scales["small_scale"],
+        "big": scales["big_scale"],
+        "sub": scales["sub_scale"],
+        "sup": scales["sup_scale"],
     }
-    lines = parse_inline_text(raw_text, tag_scales, item.get("number", "?"))
+
+    lines = parse_inline_text(
+        raw_text,
+        tag_scales,
+        sticker_number
+    )
+
+    has_explicit_newline = "\n" in raw_text
+
     if len(lines) > max_lines:
         raise ValueError(
-            f"Sticker {item.get('number', '?')}: text has {len(lines)} explicit lines, "
+            f"Sticker {sticker_number}: text has "
+            f"{len(lines)} explicit lines, "
             f"but max_lines is {max_lines}."
         )
 
-    width_ratio = float(item.get("text_width_ratio", text_width_ratio_default))
-    height_ratio = float(item.get("max_text_height_ratio", max_text_height_ratio_default))
+    width_ratio = float(
+        item.get("text_width_ratio", text_width_ratio_default)
+    )
+    height_ratio = float(
+        item.get("max_text_height_ratio", max_text_height_ratio_default)
+    )
+
     if width_ratio <= 0 or height_ratio <= 0:
-        raise ValueError(f"Sticker {item.get('number', '?')}: text size ratios must be greater than 0.")
+        raise ValueError(
+            f"Sticker {sticker_number}: "
+            "text size ratios must be greater than 0."
+        )
 
     fixed_size = "font_size" in item
     auto_shrink = bool(item.get("auto_shrink", auto_shrink_default))
+
     if fixed_size:
         sizes = [max(1, int(item["font_size"]))]
     elif auto_shrink:
-        sizes = range(auto_font_max_size, auto_font_min_size - 1, -1)
+        sizes = range(
+            auto_font_max_size,
+            auto_font_min_size - 1,
+            -1
+        )
     else:
-        sizes = [48]
+        sizes = [font_size_default]
 
     chosen = None
     last_measure = None
+    last_line_count = len(lines)
+
+    # ------------------------------------------------------
+    # Phase 1:
+    # Try the original line structure first.
+    # This means explicit newlines are preserved, and text
+    # without newlines is kept on one line whenever possible.
+    # ------------------------------------------------------
     for size in sizes:
         measured, widest, total_height = measure_rich_lines(
-            draw, lines, size, weight, outline_width
+            draw,
+            lines,
+            size,
+            weight,
+            outline_width
         )
+
         last_measure = (widest, total_height, size)
-        if widest <= max_allowed_width and total_height <= max_allowed_height:
-            chosen = (size, measured)
+        last_line_count = len(lines)
+
+        if (
+            widest <= max_allowed_width
+            and total_height <= max_allowed_height
+        ):
+            chosen = (size, measured, lines)
             break
 
+    # ------------------------------------------------------
+    # Phase 2:
+    # If there were no explicit newlines and the original
+    # line could not fit, try automatic wrapping.
+    # ------------------------------------------------------
+    if chosen is None and not has_explicit_newline:
+        for size in sizes:
+            wrapped_lines = wrap_rich_lines(
+                draw,
+                lines,
+                size,
+                weight,
+                outline_width,
+                max_allowed_width
+            )
+
+            if len(wrapped_lines) > max_lines:
+                last_line_count = len(wrapped_lines)
+                continue
+
+            measured, widest, total_height = measure_rich_lines(
+                draw,
+                wrapped_lines,
+                size,
+                weight,
+                outline_width
+            )
+
+            last_measure = (widest, total_height, size)
+            last_line_count = len(wrapped_lines)
+
+            if (
+                widest <= max_allowed_width
+                and total_height <= max_allowed_height
+            ):
+                chosen = (size, measured, wrapped_lines)
+                break
+
+    # ------------------------------------------------------
+    # Error handling
+    # ------------------------------------------------------
     if chosen is None:
-        widest, total_height, attempted_size = last_measure
+        if last_measure is None:
+            widest = 0
+            total_height = 0
+            attempted_size = 0
+        else:
+            widest, total_height, attempted_size = last_measure
+
         raise ValueError(
-            f"Sticker {item.get('number', '?')}: rich text cannot fit without automatic line wrapping. "
+            f"Sticker {sticker_number}: text cannot fit "
+            f"within the allowed area. "
             f"At font size ({attempted_size}px), measured text is "
             f"{int(widest)}x{int(total_height)}px; allowed area is "
             f"{int(max_allowed_width)}x{int(max_allowed_height)}px. "
-            "Add an explicit \\n where a line break is acceptable, reduce outline/font size, "
-            "or increase the configured ratios."
+            f"Line count: {last_line_count}; max_lines: {max_lines}. "
+            "Try reducing outline width, increasing the allowed text "
+            "area, or increasing max_lines."
         )
 
+    chosen_size, chosen_measured, chosen_lines = chosen
+
+    # ------------------------------------------------------
+    # Determine overlap ratio using the final visual line count.
+    # ------------------------------------------------------
     if "overlap_ratio" in item:
         try:
             overlap_ratio = float(item["overlap_ratio"])
         except (TypeError, ValueError):
-            raise ValueError(f"Sticker {item.get('number', '?')}: overlap_ratio must be numeric.")
+            raise ValueError(
+                f"Sticker {sticker_number}: "
+                "overlap_ratio must be numeric."
+            )
+
     elif isinstance(overlap_ratio_default, dict):
-        overlap_ratio = overlap_ratio_default.get(len(lines), overlap_ratio_default.get(3, 0.70))
+        overlap_ratio = overlap_ratio_default.get(
+            len(chosen_lines),
+            overlap_ratio_default.get(3, 0.70)
+        )
+
     else:
         overlap_ratio = overlap_ratio_default
 
     if not 0 <= overlap_ratio < 1:
-        raise ValueError(f"Sticker {item.get('number', '?')}: overlap_ratio must be >= 0 and < 1.")
+        raise ValueError(
+            f"Sticker {sticker_number}: "
+            "overlap_ratio must be >= 0 and < 1."
+        )
 
     return {
-        "color": color, "outline_color": outline_color,
-        "outline_width": outline_width, "position": position,
-        "alignment": alignment, "overlap_ratio": overlap_ratio,
-        "font_size": chosen[0], "font_weight": weight,
-        "measured_lines": chosen[1],
-    }, lines
-
+        "color": color,
+        "outline_color": outline_color,
+        "outline_width": outline_width,
+        "position": position,
+        "alignment": alignment,
+        "overlap_ratio": overlap_ratio,
+        "font_size": chosen_size,
+        "font_weight": weight,
+        "measured_lines": chosen_measured,
+    }, chosen_lines
 
 def render_text_image(lines, style, render_scale=1.0):
     """Render rich text using each font's metrics and a shared baseline."""
@@ -592,54 +968,110 @@ def render_text_image(lines, style, render_scale=1.0):
         return None
 
     render_scale = max(float(render_scale), 1e-6)
-    stroke_width = max(0, int(round(style["outline_width"] * render_scale)))
+    stroke_width = max(
+        0,
+        int(round(style["outline_width"] * render_scale))
+    )
     rendered_lines = []
 
     for measured_line in style["measured_lines"]:
-        line_width = max(1, int(round(measured_line["width"] * render_scale)))
-        line_height = max(1, int(round(measured_line["height"] * render_scale)))
+        line_width = max(
+            1,
+            int(round(measured_line["width"] * render_scale))
+        )
+        line_height = max(
+            1,
+            int(round(measured_line["height"] * render_scale))
+        )
         ascent = int(round(measured_line["ascent"] * render_scale))
-        line_img = Image.new("RGBA", (line_width + 8, line_height + 8), (0, 0, 0, 0))
+
+        line_img = Image.new(
+            "RGBA",
+            (line_width + 8, line_height + 8),
+            (0, 0, 0, 0)
+        )
         draw = ImageDraw.Draw(line_img)
+
         x = 4
         baseline_y = 4 + ascent
 
         for run, measured_font, run_width, baseline_shift in measured_line["runs"]:
-            size = max(1, int(round(measured_font.size * render_scale)))
+            size = max(
+                1,
+                int(round(measured_font.size * render_scale))
+            )
             font = load_font(size, style.get("font_weight"))
             shift = int(round(baseline_shift * render_scale))
             run_text = run["text"]
             run_style = run["style"]
             run_stroke = stroke_width
 
-            # Draw the white/selected outline first, then the fill. Bold is
-            # simulated by a tiny same-color overdraw when the font is static.
-            draw.text((x, baseline_y + shift), run_text, font=font,
-                      fill=style["color"], anchor="ls",
-                      stroke_width=run_stroke, stroke_fill=style["outline_color"])
+            # Draw the white/selected outline first, then the fill.
+            # Bold is simulated by a tiny same-color overdraw.
+            draw.text(
+                (x, baseline_y + shift),
+                run_text,
+                font=font,
+                fill=style["color"],
+                anchor="ls",
+                stroke_width=run_stroke,
+                stroke_fill=style["outline_color"]
+            )
+
             if run_style.get("bold"):
-                draw.text((x + max(1, int(round(render_scale))), baseline_y + shift),
-                          run_text, font=font, fill=style["color"], anchor="ls")
+                draw.text(
+                    (
+                        x + max(1, int(round(render_scale))),
+                        baseline_y + shift
+                    ),
+                    run_text,
+                    font=font,
+                    fill=style["color"],
+                    anchor="ls"
+                )
+
             if run_style.get("strike") or run_style.get("underline"):
                 text_w = int(round(draw.textlength(run_text, font=font)))
                 ascent_px, descent_px = font.getmetrics()
+
                 if run_style.get("strike"):
                     line_y = baseline_y + shift - int(ascent_px * 0.35)
-                    draw.line((x, line_y, x + text_w, line_y),
-                              fill=style["color"], width=max(1, int(round(render_scale * 2))))
+                    draw.line(
+                        (x, line_y, x + text_w, line_y),
+                        fill=style["color"],
+                        width=max(1, int(round(render_scale * 2)))
+                    )
+
                 if run_style.get("underline"):
-                    line_y = baseline_y + shift + max(1, int(descent_px * 0.25))
-                    draw.line((x, line_y, x + text_w, line_y),
-                              fill=style["color"], width=max(1, int(round(render_scale * 2))))
+                    line_y = (
+                        baseline_y
+                        + shift
+                        + max(1, int(descent_px * 0.25))
+                    )
+                    draw.line(
+                        (x, line_y, x + text_w, line_y),
+                        fill=style["color"],
+                        width=max(1, int(round(render_scale * 2)))
+                    )
+
             x += int(round(run_width * render_scale))
 
         bbox = line_img.getbbox()
-        rendered_lines.append(line_img.crop(bbox) if bbox else line_img)
+        rendered_lines.append(
+            line_img.crop(bbox) if bbox else line_img
+        )
 
     total_w = max(img.width for img in rendered_lines)
     total_h = sum(img.height for img in rendered_lines)
-    text_img = Image.new("RGBA", (total_w, total_h), (0, 0, 0, 0))
+
+    text_img = Image.new(
+        "RGBA",
+        (total_w, total_h),
+        (0, 0, 0, 0)
+    )
+
     y = 0
+
     for img in rendered_lines:
         if style["alignment"] == "left":
             x = 0
@@ -647,9 +1079,101 @@ def render_text_image(lines, style, render_scale=1.0):
             x = total_w - img.width
         else:
             x = (total_w - img.width) // 2
+
         text_img.alpha_composite(img, (x, y))
         y += img.height
+
     return text_img
+
+
+# ==========================================
+# Final LINE Canvas
+# ==========================================
+def make_line_canvas(content):
+    """
+    Fit content into the LINE maximum canvas while preserving aspect ratio.
+
+    The output has an even width and height. One outer dimension is exactly
+    MAX_W or MAX_H (rounded down to even if configured as an odd number).
+    MARGIN is reserved inside the canvas on all four sides.
+    """
+    if content is None:
+        raise ValueError("Cannot create output canvas from an empty image.")
+
+    bbox = content.getchannel("A").getbbox()
+
+    if bbox:
+        content = content.crop(bbox)
+
+    src_w, src_h = content.size
+
+    if src_w < 1 or src_h < 1:
+        raise ValueError("Sticker content has zero width or height.")
+
+    target_max_w = MAX_W - (MAX_W % 2)
+    target_max_h = MAX_H - (MAX_H % 2)
+
+    if target_max_w < 2 or target_max_h < 2:
+        raise ValueError(
+            "MAX_W and MAX_H must allow at least 2-pixel even dimensions."
+        )
+
+    # Select the limiting outer dimension, preserving the content aspect ratio.
+    if (src_w / src_h) >= (target_max_w / target_max_h):
+        canvas_w = target_max_w
+        canvas_h = max(
+            2,
+            int((src_h * canvas_w / src_w) // 2) * 2
+        )
+    else:
+        canvas_h = target_max_h
+        canvas_w = max(
+            2,
+            int((src_w * canvas_h / src_h) // 2) * 2
+        )
+
+    # Protect against floating-point rounding exceeding configured bounds.
+    canvas_w = min(canvas_w, target_max_w)
+    canvas_h = min(canvas_h, target_max_h)
+
+    # For unusually narrow/tall stickers, reduce the effective margin only
+    # as much as needed to keep a positive inner area.
+    effective_margin = min(
+        MARGIN,
+        max(0, (canvas_w - 1) // 2),
+        max(0, (canvas_h - 1) // 2)
+    )
+
+    inner_w = canvas_w - 2 * effective_margin
+    inner_h = canvas_h - 2 * effective_margin
+
+    # Upscale or downscale as needed so the content uses the available area.
+    scale = min(
+        inner_w / src_w,
+        inner_h / src_h
+    )
+
+    out_w = max(1, int(round(src_w * scale)))
+    out_h = max(1, int(round(src_h * scale)))
+
+    if (out_w, out_h) != content.size:
+        content = content.resize(
+            (out_w, out_h),
+            Image.Resampling.LANCZOS
+        )
+
+    canvas = Image.new(
+        "RGBA",
+        (canvas_w, canvas_h),
+        (0, 0, 0, 0)
+    )
+
+    x = max(effective_margin, (canvas_w - out_w) // 2)
+    y = max(effective_margin, (canvas_h - out_h) // 2)
+
+    canvas.alpha_composite(content, (x, y))
+
+    return canvas
 
 
 # ==========================================
@@ -678,7 +1202,9 @@ cell_h = H / float(GRID_ROWS)
 total_stamps = GRID_COLS * GRID_ROWS
 
 measure_canvas = Image.new(
-    "RGBA", (MAX_W, MAX_H), (0, 0, 0, 0)
+    "RGBA",
+    (MAX_W, MAX_H),
+    (0, 0, 0, 0)
 )
 
 measure_draw = ImageDraw.Draw(measure_canvas)
@@ -801,6 +1327,7 @@ for row in range(GRID_ROWS):
             )
 
             sub_img = Image.fromarray(sub_arr, "RGBA")
+
         bbox = sub_img.getbbox()
 
         im_sticker = (
@@ -814,134 +1341,186 @@ for row in range(GRID_ROWS):
             item = stickers_config[num]
             cw, ch = im_sticker.size
 
-            width_ratio = float(item.get("text_width_ratio", text_width_ratio_default))
-            height_ratio = float(item.get("max_text_height_ratio", max_text_height_ratio_default))
-            explicit_line_count = max(1, len(str(item.get("text", "")).strip().split("\n")))
+            width_ratio = float(
+                item.get("text_width_ratio", text_width_ratio_default)
+            )
+            height_ratio = float(
+                item.get(
+                    "max_text_height_ratio",
+                    max_text_height_ratio_default
+                )
+            )
+
+            explicit_line_count = max(
+                1,
+                len(str(item.get("text", "")).strip().split("\n"))
+            )
+
             if "overlap_ratio" in item:
                 anticipated_overlap = float(item["overlap_ratio"])
+
             elif isinstance(overlap_ratio_default, dict):
-                anticipated_overlap = float(overlap_ratio_default.get(
-                    explicit_line_count, overlap_ratio_default.get(3, 0.70)
-                ))
+                anticipated_overlap = float(
+                    overlap_ratio_default.get(
+                        explicit_line_count,
+                        overlap_ratio_default.get(3, 0.70)
+                    )
+                )
+
             else:
                 anticipated_overlap = float(overlap_ratio_default)
-            anticipated_overlap = min(0.95, max(0.0, anticipated_overlap))
+
+            anticipated_overlap = min(
+                0.95,
+                max(0.0, anticipated_overlap)
+            )
 
             # Reserve enough room for character + anticipated text overlap.
-            # All dimensions here are virtual final-output pixels. The source
-            # character itself is not resized until after high-resolution
-            # compositing is complete.
+            # All dimensions here are virtual final-output pixels.
             content_max_w = max(1, MAX_W - 2 * MARGIN)
             content_max_h = max(1, MAX_H - 2 * MARGIN)
+
             has_text = bool(str(item.get("text", "")).strip())
+
             virtual_total_height = (
-                ch * (1.0 + height_ratio * (1.0 - anticipated_overlap))
+                ch * (
+                    1.0
+                    + height_ratio * (1.0 - anticipated_overlap)
+                )
                 if has_text else ch
             )
+
             output_scale = min(
                 1.0,
                 content_max_w / max(1, cw),
                 content_max_h / max(1.0, virtual_total_height)
             )
+
             output_scale = max(output_scale, 1e-6)
 
             final_char_w = cw * output_scale
             final_char_h = ch * output_scale
+
             max_text_width = min(
-                float(content_max_w), max(1.0, final_char_w * width_ratio)
+                float(content_max_w),
+                max(1.0, final_char_w * width_ratio)
             )
+
             max_text_height = min(
-                float(content_max_h), max(1.0, final_char_h * height_ratio)
+                float(content_max_h),
+                max(1.0, final_char_h * height_ratio * explicit_line_count * 1.05)
+            )
+
+            print(
+                f"[DEBUG Sticker {num}] "
+                f"content_max_h={content_max_h:.2f}, "
+                f"final_char_h={final_char_h:.2f}, "
+                f"height_ratio={height_ratio:.3f}, "
+                f"explicit_line_count={explicit_line_count}, "
+                f"calculated_height={final_char_h * height_ratio * explicit_line_count * 1.05:.2f}, "
+                f"max_text_height={max_text_height:.2f}"
             )
 
             style, lines = prepare_text_auto_fit(
-                item, measure_draw, max_text_width, max_text_height
+                item,
+                measure_draw,
+                max_text_width,
+                max_text_height
             )
+
             render_scale = 1.0 / output_scale
+
             text_img = (
-                render_text_image(lines, style, render_scale=render_scale)
+                render_text_image(
+                    lines,
+                    style,
+                    render_scale=render_scale
+                )
                 if lines and style else None
             )
 
             if text_img is not None:
                 tw, th = text_img.size
-                overlap_h = int(round(th * style["overlap_ratio"]))
+                overlap_h = int(
+                    round(th * style["overlap_ratio"])
+                )
+
                 canvas_w = max(cw, tw)
                 canvas_h = ch + th - overlap_h
+
                 highres_canvas = Image.new(
-                    "RGBA", (canvas_w, canvas_h), (0, 0, 0, 0)
+                    "RGBA",
+                    (canvas_w, canvas_h),
+                    (0, 0, 0, 0)
                 )
+
                 char_x = (canvas_w - cw) // 2
                 text_x = (canvas_w - tw) // 2
 
                 if style["position"] == "top":
-                    highres_canvas.alpha_composite(text_img, (text_x, 0))
                     char_y = th - overlap_h
-                    highres_canvas.alpha_composite(im_sticker, (char_x, char_y))
+
+                    # Draw the character first (back layer).
+                    highres_canvas.alpha_composite(
+                        im_sticker,
+                        (char_x, char_y)
+                    )
+
+                    # Draw the text afterwards (front layer).
+                    highres_canvas.alpha_composite(
+                        text_img,
+                        (text_x, 0)
+                    )
+
                 else:
-                    highres_canvas.alpha_composite(im_sticker, (char_x, 0))
+                    # Draw the character first (back layer).
+                    highres_canvas.alpha_composite(
+                        im_sticker,
+                        (char_x, 0)
+                    )
+
                     text_y = ch - overlap_h
-                    highres_canvas.alpha_composite(text_img, (text_x, text_y))
+
+                    # Draw the text afterwards (front layer).
+                    highres_canvas.alpha_composite(
+                        text_img,
+                        (text_x, text_y)
+                    )
+
             else:
                 highres_canvas = im_sticker
 
             # Apply one final LANCZOS resize to the complete composition.
-            # The configurable margin is reserved on every side for both
-            # text and no-text stickers.
             final_scale = min(
                 output_scale,
                 content_max_w / max(1, highres_canvas.width),
                 content_max_h / max(1, highres_canvas.height)
             )
-            final_w = max(1, int(round(highres_canvas.width * final_scale)))
-            final_h = max(1, int(round(highres_canvas.height * final_scale)))
+
+            final_w = max(
+                1,
+                int(round(highres_canvas.width * final_scale))
+            )
+            final_h = max(
+                1,
+                int(round(highres_canvas.height * final_scale))
+            )
+
             if (final_w, final_h) != highres_canvas.size:
                 content = highres_canvas.resize(
-                    (final_w, final_h), Image.Resampling.LANCZOS
+                    (final_w, final_h),
+                    Image.Resampling.LANCZOS
                 )
             else:
                 content = highres_canvas
 
-            # Crop transparent rendering padding.
-            alpha_bbox = content.getchannel("A").getbbox()
-            if alpha_bbox:
-                content = content.crop(alpha_bbox)
-
-            # Create a tight canvas around the actual content.
-            # MAX_W and MAX_H are maximum bounds, not fixed output dimensions.
-            canvas = Image.new(
-                "RGBA",
-                (content.width + 2 * MARGIN, content.height + 2 * MARGIN),
-                (0, 0, 0, 0)
-            )
-            canvas.alpha_composite(content, (MARGIN, MARGIN))
+            # Create the final LINE-compliant canvas.
+            # One dimension reaches MAX_W or MAX_H; both are even.
+            canvas = make_line_canvas(content)
 
         else:
-            # No Text Mode: preserve the original extraction and margin logic.
-            w, h = im_sticker.size
-
-            scale = min(
-                1.0,
-                (MAX_W - 2 * MARGIN) / w,
-                (MAX_H - 2 * MARGIN) / h
-            )
-
-            if scale < 1.0:
-                im_sticker = im_sticker.resize(
-                    (
-                        max(2, int(w * scale)),
-                        max(2, int(h * scale))
-                    ),
-                    Image.Resampling.LANCZOS
-                )
-
-            mw, mh = im_sticker.size
-            canvas = Image.new(
-                "RGBA",
-                (mw + 2 * MARGIN, mh + 2 * MARGIN),
-                (0, 0, 0, 0)
-            )
-            canvas.alpha_composite(im_sticker, (MARGIN, MARGIN))
+            # No Text Mode uses the same final sizing rules.
+            canvas = make_line_canvas(im_sticker)
 
         out_path = os.path.join(
             OUT_DIR,
@@ -954,7 +1533,10 @@ for row in range(GRID_ROWS):
             optimize=True
         )
 
-        print(f"  -> Saved: {out_path}")
+        print(
+            f"  -> Saved: {out_path} "
+            f"({canvas.width}x{canvas.height})"
+        )
 
 
 print(
